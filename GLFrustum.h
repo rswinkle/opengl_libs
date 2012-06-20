@@ -31,11 +31,14 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 */
 
 #include <glm/glm.hpp>
+#include "utils.h"
 #include "GLFrame.h"
 
 #ifndef __GL_FRAME_CLASS
 #define __GL_FRAME_CLASS
 
+#define PI (3.14159265358979323846)
+#define TO_RADIANS (PI/180.0)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,15 +56,12 @@ public:
 	GLFrustum(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
 	{ set_orthographic(xmin, xmax, ymin, ymax, zmin, zmax); }
 
-	// Get the projection matrix for this guy
-	const glm::mat4& GetProjectionMatrix(void) { return proj_mat; }
 
 	// Calculates the corners of the Frustum and sets the projection matrix.
 	// Orthographics Matrix Projection    
 	void set_orthographic(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
 	{
-		rm::MakeOrthographicMatrix(proj_mat, xmin, xmax, ymin, ymax, zmin, zmax);
-
+		proj_mat = glm::ortho(xmin, xmax, ymin, ymax, zmin, zmax);
 
 		// Fill in values for untransformed Frustum corners
 		// Near Upper Left
@@ -91,7 +91,7 @@ public:
 
 
 // Calculates the corners of the Frustum and sets the projection matrix.
-// Perspective Matrix Projection (fov is radians)
+// Perspective Matrix Projection (fov is degrees)
 void set_perspective(float fov, float aspect, float near, float far)
 {
 	float xmin, xmax, ymin, ymax;       // Dimensions of near clipping plane
@@ -99,19 +99,19 @@ void set_perspective(float fov, float aspect, float near, float far)
 
 	// Do the Math for the near clipping plane
 	//ymax = fNear * float(tan( fFov * RM_PI / 360.0 ));
-	ymax = near * float(tan( fov * 0.5f ));
+	ymax = near * float(tan( fov * TO_RADIANS * 0.5f ));
 	ymin = -ymax;
 	xmin = ymin * aspect;
 	xmax = -xmin;
 
 	// Construct the projection matrix
 	//it's already identity (why duplicate code when I have this function)
-	proj_mat = glm::perspective(fov, float(width)/float(height), zmin, zmax);
+	proj_mat = glm::perspective(fov, aspect, near, far);
 	
 
 	// Do the Math for the far clipping plane
 // 	yFmax = fFar * float(tan(fFov * RM_PI / 360.0));
-	yFmax = far * float(tan(fov * 0.5f));
+	yFmax = far * float(tan(fov * TO_RADIANS * 0.5f));
 	yFmin = -yFmax;
 	xFmin = yFmin * aspect;
 	xFmax = -xFmin;
@@ -146,7 +146,7 @@ void set_perspective(float fov, float aspect, float near, float far)
 
 // Builds a transformation matrix and transforms the corners of the Frustum,
 // then derives the plane equations
-glm::mat4 Transform(GLFrame& Camera)
+glm::mat4 transform(GLFrame& Camera)
 {
 	// Workspace
 	glm::mat4 matrix;
@@ -174,17 +174,17 @@ glm::mat4 Transform(GLFrame& Camera)
 	vCross = glm::cross(vUp, vForward);
 
 	//std::cout<<vXAxis<<"\n";
-	// Set matrix column 1
-	matrix.setc1(vCross);
+	// Set matrix column 1 X Column
+	matrix[0] = glm::vec4(vCross, 0.0f);
 
 	// Y Column
-	matrix.setc2(vUp);
+	matrix[1] = glm::vec4(vUp, 0.0f);
 
 	// Z Column
-	matrix.setc3(vForward);
+	matrix[2] = glm::vec4(vForward, 0.0f);
 
 	// Translation (already done)
-	matrix.setc4(vOrigin);
+	matrix[3] = glm::vec4(vOrigin, 1.0f);
 	
 	
 
@@ -272,7 +272,6 @@ glm::mat4 Transform(GLFrame& Camera)
 // 		return true;
 // 	}
 
-//protected:
 	// The projection matrix for this frustum
 	glm::mat4 proj_mat;	
 

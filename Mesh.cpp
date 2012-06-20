@@ -12,13 +12,16 @@ void Mesh::end()
 {
 	
 	
-	// Create the master vertex array object
-	glGenVertexArrays(1, &vbo);
-	glBindVertexArray(vbo);
-    
- 
-	glGenBuffers(1, bufferobjects);
-
+	// Create the master vertex array object if not already created
+	if (!vbo) {
+		glGenVertexArrays(1, &vbo);
+		glBindVertexArray(vbo);
+		
+	
+		glGenBuffers(1, bufferobjects);
+	}
+	
+	
 	// Vertex data
     glBindBuffer(GL_ARRAY_BUFFER, bufferobjects[0]);
 	glEnableVertexAttribArray(ATTRIBUTE_VERTEX);

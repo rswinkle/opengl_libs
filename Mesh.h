@@ -26,10 +26,12 @@ public:
 	
 	Mesh()
 	{
+		vbo = 0;
 		primitive = GL_POINTS;
 	}
 	Mesh(GLenum p)
 	{
+		vbo = 0;
 		primitive = p;
 	}
 
@@ -43,6 +45,7 @@ public:
 	
 	void add_vertex(float x, float y, float z) { verts.push_back(glm::vec3(x, y, z)); }
 
+	void clear() { verts.clear(); }
 	
 
 	void end();

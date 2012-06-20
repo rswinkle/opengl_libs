@@ -30,7 +30,10 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "utils.h"
+
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #ifndef _ORTHO_FRAME_
 #define _ORTHO_FRAME_
@@ -41,35 +44,6 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 
 
 
-using glm::mat4;
-using glm::vec3;
-using glm::vec4;
-
-
-inline std::ostream& operator<<(std::ostream& stream, const vec3& a)
-{
-	return stream <<"("<<a.x<<", "<<a.y<<", "<<a.z<<")";
-}
-
-inline std::ostream& operator<<(std::ostream& stream, const vec4& a)
-{
-	return stream <<"("<<a.x<<", "<<a.y<<", "<<a.z<<", "<<a.w<<")";
-}
-
-
-inline std::ostream& operator<<(std::ostream& stream, const mat4& mat)
-{
-	mat4 t = glm::transpose(mat);
-	return stream <<"["<<t[0]<<"\n"<<t[1]<<"\n"<<t[2]<<"\n"<<t[3]<<"]";
-}
-
-
-inline std::ostream& operator<<(std::ostream& stream, const mat3& mat)
-{
-	mat3 t = glm::transpose(mat);
-	return stream <<"["<<t[0]<<"\n"<<t[1]<<"\n"<<t[2]<<"]";
-}
-
 class GLFrame
 {
 public:
@@ -79,7 +53,7 @@ public:
 
 	// Default position and orientation. At the origin, looking
 	// down the positive Z axis (right handed coordinate system).
-	GLFrame(bool camera=false, glm::vec3 origin = vec3(0.0f)) {
+	GLFrame(bool camera=false, glm::vec3 origin = glm::vec3(0.0f)) {
 		// At origin
 		this->origin = origin;
 
@@ -97,58 +71,58 @@ public:
 
 	/////////////////////////////////////////////////////////////
 	// Set Location
-	inline void SetOrigin(const glm::vec3 vPoint) { origin = vPoint; }
-	inline void SetOrigin(float x, float y, float z) { origin.x = x; origin.y = y; origin.z = z; }
+	inline void set_origin(const glm::vec3 vPoint) { origin = vPoint; }
+	inline void set_origin(float x, float y, float z) { origin.x = x; origin.y = y; origin.z = z; }
 
-	inline glm::vec3 GetOrigin() { return origin; }
+	inline glm::vec3 get_origin() { return origin; }
 
 
 	/////////////////////////////////////////////////////////////
 	// Set Forward Direction
-	inline void SetForwardVector(const glm::vec3 vDirection) { forward = vDirection; }
-	inline void SetForwardVector(float x, float y, float z) { forward.x = x; forward.y = y; forward.z = z; }
+	inline void set_forward(const glm::vec3 vDirection) { forward = vDirection; }
+	inline void set_forward(float x, float y, float z) { forward.x = x; forward.y = y; forward.z = z; }
 
-	inline glm::vec3 GetForwardVector() { return forward; }
+	inline glm::vec3 get_forward() { return forward; }
 
 	/////////////////////////////////////////////////////////////
 	// Set Up Direction
-	inline void SetUpVector(const glm::vec3 vDirection) { up = vDirection; }
-	inline void SetUpVector(float x, float y, float z) { up.x = x; up.y = y; up.z = z; }
+	inline void set_up(const glm::vec3 vDirection) { up = vDirection; }
+	inline void set_up(float x, float y, float z) { up.x = x; up.y = y; up.z = z; }
 
-	inline glm::vec3 GetUpVector() { return up; }
+	inline glm::vec3 get_up() { return up; }
 
 
 	/////////////////////////////////////////////////////////////
 	// Get Axes
-	inline glm::vec3 GetZAxis() { return forward; }
-	inline glm::vec3 GetYAxis() { return up; }
-	inline glm::vec3 GetXAxis() { return glm::cross(up, forward); }
+	inline glm::vec3 get_z() { return forward; }
+	inline glm::vec3 get_y() { return up; }
+	inline glm::vec3 get_x() { return glm::cross(up, forward); }
 
 
 	/////////////////////////////////////////////////////////////
 	// Translate along orthonormal axis... world or local
-	inline void TranslateWorld(float x, float y, float z) { origin.x += x; origin.y += y; origin.z += z; }
+	inline void translate_world(float x, float y, float z) { origin.x += x; origin.y += y; origin.z += z; }
 
-	inline void TranslateLocal(float x, float y, float z) { MoveForward(z); MoveUp(y); MoveRight(x);	}
+	inline void translate_local(float x, float y, float z) { move_forward(z); move_up(y); move_right(x);	}
 
 
 	/////////////////////////////////////////////////////////////
 	// Move Forward (along Z axis)
-	inline void MoveForward(float fDelta) { origin += forward * fDelta; }
+	inline void move_forward(float delta) { origin += forward * delta; }
 
 
 	// Move along Y axis
-	inline void MoveUp(float fDelta) { origin += up * fDelta; }
+	inline void move_up(float delta) { origin += up * delta; }
 
 
 	// Move along X axis
-	inline void MoveRight(float fDelta) { origin += glm::cross(up, forward) * fDelta; }
+	inline void move_right(float delta) { origin += glm::cross(up, forward) * delta; }
 	
 
 
 	///////////////////////////////////////////////////////////////////////
 	// Just assemble the matrix
-	glm::mat4 GetMatrix(bool bRotationOnly = false)
+	glm::mat4 get_matrix(bool bRotationOnly = false)
 	{
 		// Calculate the right side (x) vector, drop it right into the matrix
 		glm::vec3 vXAxis = glm::cross(up, forward);
@@ -174,15 +148,13 @@ public:
 		} else {
 			matrix[3] = glm::vec4(origin, 1.0f);
 		}
-
-		//matrix[3][3] = 1.0f;
 	}
 
 
 
 	////////////////////////////////////////////////////////////////////////
 	// Assemble the camera matrix
-	glm::mat4 camera_matrix(bool bRotationOnly = false)
+	glm::mat4 get_camera_matrix(bool bRotationOnly = false)
 	{
 		glm::mat4 m;
 		glm::vec3 x, z;
@@ -211,8 +183,8 @@ public:
 		}
 		
 		// Apply translation too
-		mat4 trans;
-		trans[3] = vec4(-origin, 1.0f);	//default constructor loads identity so this is all we need to form translation
+		glm::mat4 trans;
+		trans[3] = glm::vec4(-origin, 1.0f);	//default constructor loads identity so this is all we need to form translation
 
 		//could instead of having the previous 2 lines just mat*(-vOrigin) and drop the result
 		//in column 4 of mat.  I think that actually saves mult ops
@@ -226,13 +198,13 @@ public:
 
 
 	// Rotate around local Y
-	void RotateLocalY(float fAngle)
+	void rotate_local_y(float angle)
 	{
 		// Just Rotate around the up vector
 		// Create a rotation matrix around my Up (Y) vector
 		//mat constructor is identity, first argument of glm transformation funcs are pre-multiplied
 		//ie returns arg1 * the rotation matrix it builds, so we just pass in identity
-		glm::mat3 rot_mat = mat3(glm::rotate(mat4(), fAngle, up));
+		glm::mat3 rot_mat = glm::mat3(glm::rotate(glm::mat4(), angle, up));
 		
 // 		std::cout<<rot_mat
 		forward = rot_mat * forward;
@@ -241,33 +213,33 @@ public:
 
 
 	// Rotate around local Z
-	void RotateLocalZ(float fAngle)
+	void rotate_local_z(float angle)
 	{
 		// Just Rotate around the forward vector
-		glm::mat3 rot_mat = mat3(glm::rotate(mat4(), fAngle, forward));
+		glm::mat3 rot_mat = glm::mat3(glm::rotate(glm::mat4(), angle, forward));
 		
 		up = rot_mat * up;
 		
-		std::cout<<rot_mat<<"\n\n"<<up<<"\n\n";
+		//std::cout<<rot_mat<<"\n\n"<<up<<"\n\n";
 
 	}
 	
 	
-	void RotateLocalX(float fAngle)
+	void rotate_local_x(float angle)
 	{
 		//get x then rotate up and forward
 		glm::vec3 x = glm::cross(up, forward);
 		
-		glm::mat3 rot_mat = mat3(glm::rotate(mat4(), fAngle, x));
+		glm::mat3 rot_mat = glm::mat3(glm::rotate(glm::mat4(), angle, x));
 		
-		up = rot_mat * up;		
+		up = rot_mat * up;
 		forward = rot_mat * forward;
 	}
 
 
 	// Reset axes to make sure they are orthonormal. This should be called on occasion
 	// if the matrix is long-lived and frequently transformed.
-	void Normalize(void)
+	void normalize(void)
 	{
 		glm::vec3 vCross = glm::cross(up, forward);
 		
@@ -280,65 +252,64 @@ public:
 	//THIS IS WHERE I AM TODO
 	
 	// Rotate in world coordinates...
-// 	void RotateWorld(float fAngle, float x, float y, float z)
-// 	{
-// 		glm::mat3 rot_mat = mat3(glm::rotate(mat4(), fAngle, glm::vec3(x,y,z));
-// 		
-// 		up = rot_mat * up;
-// 		forward = rot_mat * forward;
-// 	}
-// 
-// 
-// 	// Rotate around a local axis
-// 	void RotateLocal(float fAngle, float x, float y, float z) 
-// 	{
-// 		glm::vec3 vWorldVect;
-// 		glm::vec3 vLocalVect(x, y, z);
-// 
-// 		vWorldVect = LocalToWorld(vLocalVect, true);
-// 		RotateWorld(fAngle, vWorldVect[0], vWorldVect[1], vWorldVect[2]);
-// 	}
-// 
-// 
-// 	// Convert Coordinate Systems
-// 	// This is pretty much, do the transformation represented by the rotation
-// 	// and position on the point
-// 	// Is it better to stick to the convention that the destination always comes
-// 	// first, or use the conventions that "sounds" like the function...
-// 	glm::vec3 LocalToWorld(const glm::vec3 local, bool bRotOnly = false)
-// 	{
-// 			// Create the rotation matrix based on the vectors
-// 		glm::mat4 rot_mat = GetMatrix(true);
-// 
-// 		// Do the rotation
-// 		glm::vec3 world = vec3(rot_mat * vec4(local, 1));
-// 
-// 		// Translate the point
-// 		if(!bRotOnly) {
-// 			world += origin
-// 		}
-// 		
-// 		return world;
-// 	}
-// 
+	void rotate_world(float angle, float x, float y, float z)
+	{
+		glm::mat3 rot_mat = glm::mat3(glm::rotate(glm::mat4(), angle, glm::vec3(x,y,z)));
+		
+		up = rot_mat * up;
+		forward = rot_mat * forward;
+	}
 
 
-// 	// Change world coordinates into "local" coordinates
-// 	glm::vec3 WorldToLocal(const glm::vec3 world)
-// 	{
-// 		////////////////////////////////////////////////
-// 		// Translate the origin
-// 		glm::vec3 new_world = world - origin;
-// 
-// 		// Create the rotation matrix based on the vectors
-// 		mat4 rot_mat, inv_mat;
-// 		rot_mat = GetMatrix(true);
-// 
-// 		// Do the rotation based on inverted matrix
-// 		inv_mat = glm::inverse(rot_mat);
-// 
-// 		return mat3(inv_mat) * new_world;
-// 	}
+	// Rotate around a local axis
+	void rotate_local(float angle, float x, float y, float z) 
+	{
+		glm::vec3 world_vec;
+		glm::vec3 local_vec(x, y, z);
+
+		world_vec = local_to_world(local_vec, true);
+		rotate_world(angle, world_vec.x, world_vec.y, world_vec.z);
+	}
+
+
+	// Convert Coordinate Systems
+	// This is pretty much, do the transformation represented by the rotation
+	// and position on the point
+
+	glm::vec3 local_to_world(const glm::vec3 local, bool bRotOnly = false)
+	{
+		// Create the rotation matrix based on the vectors
+		glm::mat4 rot_mat = get_matrix(true);
+
+		// Do the rotation
+		glm::vec3 world = glm::vec3(rot_mat * glm::vec4(local, 1));
+
+		// Translate the point
+		if(!bRotOnly) {
+			world += origin;
+		}
+		
+		return world;
+	}
+
+
+
+	// Change world coordinates into "local" coordinates
+	glm::vec3 world_to_local(const glm::vec3 world)
+	{
+		////////////////////////////////////////////////
+		// Translate the origin
+		glm::vec3 new_world = world - origin;
+
+		// Create the rotation matrix based on the vectors
+		mat4 rot_mat, inv_mat;
+		rot_mat = get_matrix(true);
+
+		// Do the rotation based on inverted matrix
+		inv_mat = glm::inverse(rot_mat);
+
+		return mat3(inv_mat) * new_world;
+	}
 
 // 
 // 	/////////////////////////////////////////////////////////////////////////////
